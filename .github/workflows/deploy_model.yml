@@ -1,0 +1,33 @@
+name: Deploy Model from W&B
+
+on:
+  repository_dispatch:
+    types: [wandb-model-update]  # This triggers on model update
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: |
+          pip install wandb joblib modal
+
+      - name: Authenticate W&B
+        env:
+          WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+        run: wandb login --relogin $WANDB_API_KEY
+
+      - name: Download Model from W&B
+        run: |
+          wandb artifact get ai-vs-human-generated-images/random_forest_model:latest --root .
+
+      - name: Deploy to Modal
+        run: python deploy.py
