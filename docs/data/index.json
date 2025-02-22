@@ -1,30 +1,35 @@
 {
     "team": [
         {
-            "name": "Team Member Name 1",
-            "email": "email@eng.pdn.ac.lk",
-            "eNumber": "E/yy/xxx"
+            "name": "Supun Dulara",
+            "email": "e20087@eng.pdn.ac.lk",
+            "eNumber": "E/20/087"
         },
         {
-            "name": "Team Member Name 2",
-            "email": "email@eng.pdn.ac.lk",
-            "eNumber": "E/yy/xxx"
+            "name": "Ishara Ekanayaka",
+            "email": "e20094@eng.pdn.ac.lk",
+            "eNumber": "E/20/094"
         },
         {
-            "name": "Team Member Name 3",
-            "email": "email@eng.pdn.ac.lk",
-            "eNumber": "E/yy/xxx"
+            "name": "S.T.S Hasantha",
+            "email": "e20131@eng.pdn.ac.lk",
+            "eNumber": "E/20/131"
+        },
+        {
+            "name": "Kusal Jayawardhana",
+            "email": "e20179@engdn.ac.lk",
+            "eNumber": "E/20/179"
         }
     ],
     "supervisors": [
         {
-            "name": "Dr. Supervisor 1",
-            "email": "email@eng.pdn.ac.lk"
+            "name": "Ms. Yasodha Vimukthi",
+            "email": "yasodhav@eng.pdn.ac.lk"
         },
         {
-            "name": "Supervisor 2",
-            "email": "email@eng.pdn.ac.lk"
+            "name": "Ms. Mathiyalagan Mathusha",
+            "email": "mmathusha@eng.pdn.ac.lk"
         }
     ],
-    "tags": []
+    "tags": ["ML", "Neural Networks","CNN"]
 }
