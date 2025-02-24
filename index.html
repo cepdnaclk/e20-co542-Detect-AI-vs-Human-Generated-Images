@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Detector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        #imagePreview {
+            max-width: 100%;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>AI Image Detector</h1>
+    <input type="file" id="imageInput" accept="image/*">
+    <button onclick="checkImage()">Check Image</button>
+    <div id="result"></div>
+    <img id="imagePreview" src="/placeholder.svg" alt="Image preview" style="display: none;">
+
+    <script>
+        function checkImage() {
+            const input = document.getElementById('imageInput');
+            const file = input.files[0];
+            if (!file) {
+                alert('Please select an image first.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('https://e20094--wandb-webhook-serve.modal.run/predict', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Origin': window.location.origin,
+                },
+                mode: 'cors',
+                credentials: 'omit',
+                body: formData
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(`HTTP error! status: ${response.status}, message: ${text}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        const probability = data.predictions[0][0];
+                        const isAI = probability > 0.5;
+                        const result = isAI ? 'AI-generated' : 'Human-generated';
+                        const percentage = (probability * 100).toFixed(2);
+                        document.getElementById('result').textContent =
+                            `Result: ${result}`;
+                    } else {
+                        document.getElementById('result').textContent =
+                            'Error processing the image. Please try again.';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('result').textContent =
+                        'An error occurred. Please try again.';
+                });
+
+            // Preview the image
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = document.getElementById('imagePreview');
+                img.src = e.target.result;
+                img.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+
+</html>

@@ -2,7 +2,7 @@ name: Deploy Model from W&B
 
 on:
   repository_dispatch:
-    types: [wandb-model-update]  # This triggers on model update
+    types: [wandb-production-deploy] 
 
 jobs:
   deploy:
@@ -18,16 +18,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install wandb joblib modal
+          python -m pip install --upgrade pip
+          pip install modal wandb numpy pillow fastapi tensorflow python-multipart
 
-      - name: Authenticate W&B
-        env:
-          WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
-        run: wandb login --relogin $WANDB_API_KEY
-
-      - name: Download Model from W&B
-        run: |
-          wandb artifact get ai-vs-human-generated-images/random_forest_model:latest --root .
+      - name: Configure Modal token
+        run: modal token set --token-id ${{ secrets.MODAL_TOKEN_ID }} --token-secret ${{ secrets.MODAL_TOKEN_SECRET }}
 
       - name: Deploy to Modal
-        run: python deploy.py
+        run: modal deploy server.py
