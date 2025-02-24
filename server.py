@@ -16,7 +16,7 @@ image = (modal.Image.debian_slim()
          .pip_install("fastapi", "wandb", "torch", "tensorflow", "h5py", "pillow", "numpy", "python-multipart"))
 vol = modal.Volume.from_name("my-volume", create_if_missing=True)
 # Create named app
-app = modal.App("wandb-webhook")
+app = modal.App("ai-vs-human-image-classifier")
 web_app = FastAPI()
 
 web_app.add_middleware(
