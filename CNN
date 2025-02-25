@@ -1,0 +1,673 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "cb80ad21",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-02-25T10:49:55.444220Z",
+     "iopub.status.busy": "2025-02-25T10:49:55.443891Z",
+     "iopub.status.idle": "2025-02-25T10:50:15.642757Z",
+     "shell.execute_reply": "2025-02-25T10:50:15.641750Z"
+    },
+    "papermill": {
+     "duration": 20.205818,
+     "end_time": "2025-02-25T10:50:15.644598",
+     "exception": false,
+     "start_time": "2025-02-25T10:49:55.438780",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "import tensorflow as tf\n",
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "import wandb\n",
+    "import os\n",
+    "import cv2\n",
+    "from sklearn.metrics import f1_score\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn.metrics import f1_score, confusion_matrix, classification_report\n",
+    "from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau\n",
+    "from kaggle_secrets import UserSecretsClient"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "baacd377",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-02-25T10:50:15.653960Z",
+     "iopub.status.busy": "2025-02-25T10:50:15.653184Z",
+     "iopub.status.idle": "2025-02-25T10:50:18.643774Z",
+     "shell.execute_reply": "2025-02-25T10:50:18.642633Z"
+    },
+    "papermill": {
+     "duration": 2.99728,
+     "end_time": "2025-02-25T10:50:18.645734",
+     "exception": false,
+     "start_time": "2025-02-25T10:50:15.648454",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "\u001b[34m\u001b[1mwandb\u001b[0m: Using wandb-core as the SDK backend.  Please refer to https://wandb.me/wandb-core for more information.\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: Currently logged in as: \u001b[33misharaekanayaka\u001b[0m (\u001b[33mDevGru\u001b[0m). Use \u001b[1m`wandb login --relogin`\u001b[0m to force relogin\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: \u001b[33mWARNING\u001b[0m If you're specifying your api key in code, ensure this code is not shared publicly.\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: \u001b[33mWARNING\u001b[0m Consider setting the WANDB_API_KEY environment variable, or running `wandb login` from the command line.\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: Appending key for api.wandb.ai to your netrc file: /root/.netrc\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: Tracking run with wandb version 0.19.1\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: Run data is saved locally in \u001b[35m\u001b[1m/kaggle/working/wandb/run-20250225_105016-nqderine\u001b[0m\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: Run \u001b[1m`wandb offline`\u001b[0m to turn off syncing.\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: Syncing run \u001b[33mClassification by CNN\u001b[0m\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: ⭐️ View project at \u001b[34m\u001b[4mhttps://wandb.ai/DevGru/ai-vs-human-generated-images\u001b[0m\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: 🚀 View run at \u001b[34m\u001b[4mhttps://wandb.ai/DevGru/ai-vs-human-generated-images/runs/nqderine\u001b[0m\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Initialize W&B with Kaggle secrets\n",
+    "user_secrets = UserSecretsClient()\n",
+    "secret_value_0 = user_secrets.get_secret(\"WANDB_KEY\")\n",
+    "wandb.login(key=secret_value_0)\n",
+    "\n",
+    "# Initialize W&B run\n",
+    "run = wandb.init(project=\"ai-vs-human-generated-images\", name=\"Classification by CNN\", entity=\"DevGru\")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "46799c23",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-02-25T10:50:18.655470Z",
+     "iopub.status.busy": "2025-02-25T10:50:18.655120Z",
+     "iopub.status.idle": "2025-02-25T10:50:18.659448Z",
+     "shell.execute_reply": "2025-02-25T10:50:18.658471Z"
+    },
+    "papermill": {
+     "duration": 0.011148,
+     "end_time": "2025-02-25T10:50:18.661273",
+     "exception": false,
+     "start_time": "2025-02-25T10:50:18.650125",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# Log hyperparameters\n",
+    "wandb.config = {\n",
+    "    \"epochs\": 5,\n",
+    "    \"batch_size\": 32,\n",
+    "    \"IMG_SIZE\": 128,\n",
+    "    \"optimizer\": 'adam',\n",
+    "    \"loss_function\": 'binary_crossentropy',\n",
+    "}"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "6f6c6bab",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-02-25T10:50:18.670907Z",
+     "iopub.status.busy": "2025-02-25T10:50:18.670550Z",
+     "iopub.status.idle": "2025-02-25T10:50:18.847892Z",
+     "shell.execute_reply": "2025-02-25T10:50:18.846781Z"
+    },
+    "papermill": {
+     "duration": 0.184353,
+     "end_time": "2025-02-25T10:50:18.849825",
+     "exception": false,
+     "start_time": "2025-02-25T10:50:18.665472",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# Load and preprocess data\n",
+    "df = (pd.read_csv('/kaggle/input/ai-vs-human-generated-dataset/train.csv')).sample(n=1000, random_state=42)\n",
+    "IMG_SIZE = 128\n",
+    "DATA_DIR = \"/kaggle/input/ai-vs-human-generated-dataset\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "3c5c6932",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-02-25T10:50:18.859493Z",
+     "iopub.status.busy": "2025-02-25T10:50:18.859131Z",
+     "iopub.status.idle": "2025-02-25T10:50:18.881181Z",
+     "shell.execute_reply": "2025-02-25T10:50:18.880112Z"
+    },
+    "papermill": {
+     "duration": 0.028818,
+     "end_time": "2025-02-25T10:50:18.882984",
+     "exception": false,
+     "start_time": "2025-02-25T10:50:18.854166",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Unnamed: 0</th>\n",
+       "      <th>file_name</th>\n",
+       "      <th>label</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>50578</th>\n",
+       "      <td>50578</td>\n",
+       "      <td>train_data/19b29cb2dd6c45a69999e1e3608b0982.jpg</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>69299</th>\n",
+       "      <td>69299</td>\n",
+       "      <td>train_data/76d24375c7ce4aa19fa50092ce335afd.jpg</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>19597</th>\n",
+       "      <td>19597</td>\n",
+       "      <td>train_data/58f88e4050a845428bc891badc334265.jpg</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>56013</th>\n",
+       "      <td>56013</td>\n",
+       "      <td>train_data/1c1b16b50b7a4801a42346e3a90c6c4c.jpg</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>21124</th>\n",
+       "      <td>21124</td>\n",
+       "      <td>train_data/5a16c753699341598768065d9ea82e7a.jpg</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "       Unnamed: 0                                        file_name  label\n",
+       "50578       50578  train_data/19b29cb2dd6c45a69999e1e3608b0982.jpg      1\n",
+       "69299       69299  train_data/76d24375c7ce4aa19fa50092ce335afd.jpg      0\n",
+       "19597       19597  train_data/58f88e4050a845428bc891badc334265.jpg      0\n",
+       "56013       56013  train_data/1c1b16b50b7a4801a42346e3a90c6c4c.jpg      0\n",
+       "21124       21124  train_data/5a16c753699341598768065d9ea82e7a.jpg      1"
+      ]
+     },
+     "execution_count": 5,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "cf3b89c5",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-02-25T10:50:18.892706Z",
+     "iopub.status.busy": "2025-02-25T10:50:18.892312Z",
+     "iopub.status.idle": "2025-02-25T10:50:18.905258Z",
+     "shell.execute_reply": "2025-02-25T10:50:18.904295Z"
+    },
+    "papermill": {
+     "duration": 0.01959,
+     "end_time": "2025-02-25T10:50:18.906869",
+     "exception": false,
+     "start_time": "2025-02-25T10:50:18.887279",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "label\n",
+      "1    500\n",
+      "0    500\n",
+      "Name: count, dtype: int64\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(df['label'].value_counts())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "b93e692f",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-02-25T10:50:18.917014Z",
+     "iopub.status.busy": "2025-02-25T10:50:18.916676Z",
+     "iopub.status.idle": "2025-02-25T10:50:29.017191Z",
+     "shell.execute_reply": "2025-02-25T10:50:29.016050Z"
+    },
+    "papermill": {
+     "duration": 10.108075,
+     "end_time": "2025-02-25T10:50:29.019273",
+     "exception": false,
+     "start_time": "2025-02-25T10:50:18.911198",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# Load images and labels\n",
+    "images, labels = [], []\n",
+    "for _, row in df.iterrows():\n",
+    "    img_path = os.path.join(DATA_DIR, row['file_name'])  \n",
+    "    label = row['label']\n",
+    "    \n",
+    "    img = cv2.imread(img_path)\n",
+    "    img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))\n",
+    "    img = img / 255.0\n",
+    "    \n",
+    "    images.append(img)\n",
+    "    labels.append(label)\n",
+    "\n",
+    "X = np.array(images)\n",
+    "y = np.array(labels)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "642796a0",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-02-25T10:50:29.029597Z",
+     "iopub.status.busy": "2025-02-25T10:50:29.029175Z",
+     "iopub.status.idle": "2025-02-25T10:50:29.403905Z",
+     "shell.execute_reply": "2025-02-25T10:50:29.402965Z"
+    },
+    "papermill": {
+     "duration": 0.381908,
+     "end_time": "2025-02-25T10:50:29.405856",
+     "exception": false,
+     "start_time": "2025-02-25T10:50:29.023948",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)\n",
+    "\n",
+    "# Define CNN model\n",
+    "inputs = tf.keras.Input(shape=(IMG_SIZE, IMG_SIZE, 3))\n",
+    "x = tf.keras.layers.Conv2D(32, (3,3), activation='relu')(inputs)\n",
+    "x = tf.keras.layers.MaxPooling2D(2,2)(x)\n",
+    "x = tf.keras.layers.BatchNormalization()(x)\n",
+    "x = tf.keras.layers.Conv2D(64, (3,3), activation='relu')(x)\n",
+    "x = tf.keras.layers.MaxPooling2D(2,2)(x)\n",
+    "x = tf.keras.layers.BatchNormalization()(x)\n",
+    "x = tf.keras.layers.Flatten()(x)\n",
+    "x = tf.keras.layers.Dense(128, activation='relu')(x)\n",
+    "x = tf.keras.layers.Dropout(0.5)(x)\n",
+    "outputs = tf.keras.layers.Dense(1, activation='sigmoid')(x)\n",
+    "\n",
+    "model = tf.keras.Model(inputs=inputs, outputs=outputs)\n",
+    "\n",
+    "# Compile model\n",
+    "model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])\n",
+    "\n",
+    "# Define callbacks\n",
+    "early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)\n",
+    "reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=3, min_lr=1e-6)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "8496797e",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-02-25T10:50:29.416983Z",
+     "iopub.status.busy": "2025-02-25T10:50:29.416312Z",
+     "iopub.status.idle": "2025-02-25T10:50:29.422499Z",
+     "shell.execute_reply": "2025-02-25T10:50:29.421590Z"
+    },
+    "papermill": {
+     "duration": 0.013526,
+     "end_time": "2025-02-25T10:50:29.424219",
+     "exception": false,
+     "start_time": "2025-02-25T10:50:29.410693",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# Custom W&B callback\n",
+    "class WandbCallback(tf.keras.callbacks.Callback):\n",
+    "    def on_epoch_end(self, epoch, logs=None):\n",
+    "        wandb.log({\n",
+    "            \"train_loss\": logs[\"loss\"],\n",
+    "            \"train_accuracy\": logs[\"accuracy\"],\n",
+    "            \"val_loss\": logs[\"val_loss\"],\n",
+    "            \"val_accuracy\": logs[\"val_accuracy\"]\n",
+    "        })"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "be66f3bc",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-02-25T10:50:29.434482Z",
+     "iopub.status.busy": "2025-02-25T10:50:29.434085Z",
+     "iopub.status.idle": "2025-02-25T10:51:40.831336Z",
+     "shell.execute_reply": "2025-02-25T10:51:40.830106Z"
+    },
+    "papermill": {
+     "duration": 71.404762,
+     "end_time": "2025-02-25T10:51:40.833581",
+     "exception": false,
+     "start_time": "2025-02-25T10:50:29.428819",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Epoch 1/5\n",
+      "\u001b[1m25/25\u001b[0m \u001b[32m━━━━━━━━━━━━━━━━━━━━\u001b[0m\u001b[37m\u001b[0m \u001b[1m15s\u001b[0m 484ms/step - accuracy: 0.7198 - loss: 4.8899 - val_accuracy: 0.5250 - val_loss: 8.1542 - learning_rate: 0.0010\n",
+      "Epoch 2/5\n",
+      "\u001b[1m25/25\u001b[0m \u001b[32m━━━━━━━━━━━━━━━━━━━━\u001b[0m\u001b[37m\u001b[0m \u001b[1m12s\u001b[0m 474ms/step - accuracy: 0.8414 - loss: 3.4739 - val_accuracy: 0.6400 - val_loss: 1.7545 - learning_rate: 0.0010\n",
+      "Epoch 3/5\n",
+      "\u001b[1m25/25\u001b[0m \u001b[32m━━━━━━━━━━━━━━━━━━━━\u001b[0m\u001b[37m\u001b[0m \u001b[1m20s\u001b[0m 457ms/step - accuracy: 0.8840 - loss: 2.0038 - val_accuracy: 0.5350 - val_loss: 3.1854 - learning_rate: 0.0010\n",
+      "Epoch 4/5\n",
+      "\u001b[1m25/25\u001b[0m \u001b[32m━━━━━━━━━━━━━━━━━━━━\u001b[0m\u001b[37m\u001b[0m \u001b[1m12s\u001b[0m 480ms/step - accuracy: 0.9269 - loss: 0.8276 - val_accuracy: 0.5250 - val_loss: 4.8914 - learning_rate: 0.0010\n",
+      "Epoch 5/5\n",
+      "\u001b[1m25/25\u001b[0m \u001b[32m━━━━━━━━━━━━━━━━━━━━\u001b[0m\u001b[37m\u001b[0m \u001b[1m12s\u001b[0m 487ms/step - accuracy: 0.9404 - loss: 0.7177 - val_accuracy: 0.5250 - val_loss: 9.8281 - learning_rate: 0.0010\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Train model\n",
+    "wandb_callback = WandbCallback()\n",
+    "history = model.fit(\n",
+    "    X_train, y_train,\n",
+    "    validation_data=(X_val, y_val),\n",
+    "    epochs=5,\n",
+    "    batch_size=32,\n",
+    "    callbacks=[early_stopping, reduce_lr, wandb_callback]\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "fa9964e5",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-02-25T10:51:40.859492Z",
+     "iopub.status.busy": "2025-02-25T10:51:40.859138Z",
+     "iopub.status.idle": "2025-02-25T10:51:41.895224Z",
+     "shell.execute_reply": "2025-02-25T10:51:41.894009Z"
+    },
+    "papermill": {
+     "duration": 1.050967,
+     "end_time": "2025-02-25T10:51:41.897212",
+     "exception": false,
+     "start_time": "2025-02-25T10:51:40.846245",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\u001b[1m7/7\u001b[0m \u001b[32m━━━━━━━━━━━━━━━━━━━━\u001b[0m\u001b[37m\u001b[0m \u001b[1m1s\u001b[0m 110ms/step\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Evaluate model\n",
+    "y_pred = model.predict(X_val)\n",
+    "y_pred_labels = (y_pred > 0.5).astype(int)\n",
+    "\n",
+    "# Calculate metrics\n",
+    "f1 = f1_score(y_val, y_pred_labels)\n",
+    "conf_matrix = confusion_matrix(y_val, y_pred_labels)\n",
+    "class_report = classification_report(y_val, y_pred_labels, target_names=['Human', 'AI'])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "7d052520",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-02-25T10:51:41.922965Z",
+     "iopub.status.busy": "2025-02-25T10:51:41.922580Z",
+     "iopub.status.idle": "2025-02-25T10:51:45.905534Z",
+     "shell.execute_reply": "2025-02-25T10:51:45.904687Z"
+    },
+    "papermill": {
+     "duration": 3.997886,
+     "end_time": "2025-02-25T10:51:45.907207",
+     "exception": false,
+     "start_time": "2025-02-25T10:51:41.909321",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "F1 Score: 0.58\n",
+      "\n",
+      "Confusion Matrix:\n",
+      "[[79 26]\n",
+      " [46 49]]\n",
+      "\n",
+      "Classification Report:\n",
+      "              precision    recall  f1-score   support\n",
+      "\n",
+      "       Human       0.63      0.75      0.69       105\n",
+      "          AI       0.65      0.52      0.58        95\n",
+      "\n",
+      "    accuracy                           0.64       200\n",
+      "   macro avg       0.64      0.63      0.63       200\n",
+      "weighted avg       0.64      0.64      0.63       200\n",
+      "\n"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "\u001b[34m\u001b[1mwandb\u001b[0m: uploading artifact trained_cnn_model\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m:                                                                                \n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: \n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: Run history:\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m:       f1_score ▁\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: train_accuracy ▁▅▆▇█\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m:     train_loss █▆▃▁▁\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m:   val_accuracy ▁█▂▁▁\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m:       val_loss ▇▁▂▄█\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: \n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: Run summary:\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m:       f1_score 0.57647\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: train_accuracy 0.92875\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m:     train_loss 0.83917\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m:   val_accuracy 0.525\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m:       val_loss 9.82808\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: \n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: 🚀 View run \u001b[33mClassification by CNN\u001b[0m at: \u001b[34m\u001b[4mhttps://wandb.ai/DevGru/ai-vs-human-generated-images/runs/nqderine\u001b[0m\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: ⭐️ View project at: \u001b[34m\u001b[4mhttps://wandb.ai/DevGru/ai-vs-human-generated-images\u001b[0m\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: Synced 5 W&B file(s), 0 media file(s), 2 artifact file(s) and 0 other file(s)\n",
+      "\u001b[34m\u001b[1mwandb\u001b[0m: Find logs at: \u001b[35m\u001b[1m./wandb/run-20250225_105016-nqderine/logs\u001b[0m\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Print evaluation results\n",
+    "print(f\"F1 Score: {f1:.2f}\")\n",
+    "print(\"\\nConfusion Matrix:\")\n",
+    "print(conf_matrix)\n",
+    "print(\"\\nClassification Report:\")\n",
+    "print(class_report)\n",
+    "\n",
+    "# Log final metrics and model to W&B\n",
+    "wandb.log({\n",
+    "    \"f1_score\": f1\n",
+    "})\n",
+    "\n",
+    "# Save the model directly to W&B\n",
+    "model.save('model.h5')\n",
+    "artifact = wandb.Artifact('trained_cnn_model', type='model')\n",
+    "artifact.add_file('model.h5')\n",
+    "wandb.log_artifact(artifact)\n",
+    "\n",
+    "# End the W&B run\n",
+    "wandb.finish()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "34922be1",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-02-25T10:51:45.934280Z",
+     "iopub.status.busy": "2025-02-25T10:51:45.933942Z",
+     "iopub.status.idle": "2025-02-25T10:51:48.197091Z",
+     "shell.execute_reply": "2025-02-25T10:51:48.195639Z"
+    },
+    "papermill": {
+     "duration": 2.278765,
+     "end_time": "2025-02-25T10:51:48.199072",
+     "exception": false,
+     "start_time": "2025-02-25T10:51:45.920307",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Note: you may need to restart the kernel to use updated packages.\n"
+     ]
+    }
+   ],
+   "source": [
+    "pip freeze > requirements.txt"
+   ]
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "none",
+   "dataSources": [
+    {
+     "databundleVersionId": 10884264,
+     "sourceId": 91198,
+     "sourceType": "competition"
+    },
+    {
+     "datasetId": 6412205,
+     "sourceId": 10550636,
+     "sourceType": "datasetVersion"
+    }
+   ],
+   "dockerImageVersionId": 30839,
+   "isGpuEnabled": false,
+   "isInternetEnabled": true,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.12"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 118.786579,
+   "end_time": "2025-02-25T10:51:51.322429",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2025-02-25T10:49:52.535850",
+   "version": "2.6.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
