@@ -1,45 +1,487 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Image Detector</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            /* Light theme variables */
+            --primary: #4361ee;
+            --primary-light: #4cc9f0;
+            --secondary: #7209b7;
+            --background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --card-bg: white;
+            --text: #292f36;
+            --text-secondary: #adb5bd;
+            --danger: #f72585;
+            --success: #06d6a0;
+            --border: rgba(76, 201, 240, 0.3);
+            --drop-bg: rgba(76, 201, 240, 0.05);
+            --drop-hover: rgba(76, 201, 240, 0.1);
+            --shadow: rgba(0, 0, 0, 0.1);
+            --meter-bg: #e9ecef;
+        }
+
+        [data-theme="dark"] {
+            /* Dark theme variables */
+            --primary: #6366f1;
+            --primary-light: #60a5fa;
+            --secondary: #8b5cf6;
+            --background: linear-gradient(135deg, #1e1e2e 0%, #2d3748 100%);
+            --card-bg: #1f2937;
+            --text: #e5e7eb;
+            --text-secondary: #9ca3af;
+            --danger: #f43f5e;
+            --success: #10b981;
+            --border: rgba(96, 165, 250, 0.3);
+            --drop-bg: rgba(96, 165, 250, 0.05);
+            --drop-hover: rgba(96, 165, 250, 0.1);
+            --shadow: rgba(0, 0, 0, 0.3);
+            --meter-bg: #374151;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
+            font-family: 'Inter', sans-serif;
+            background: var(--background);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            color: var(--text);
+            transition: background 0.3s ease;
         }
 
-        #result {
-            margin-top: 20px;
-            font-weight: bold;
+        .container {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 25px;
+            margin: 10px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
         }
 
-        #imagePreview {
-            max-width: 100%;
+        /* Theme toggle styles */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--primary);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(26px);
+        }
+
+        .theme-icon {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: var(--primary);
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            font-size: 1rem;
+        }
+
+        .upload-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .drop-area {
+            border: 2px dashed var(--primary-light);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            max-width: 500px;
+            background-color: var(--drop-bg);
+        }
+
+        .drop-area:hover {
+            background-color: var(--drop-hover);
+            border-color: var(--primary);
+        }
+
+        .drop-area .icon {
+            font-size: 2.5rem;
+            color: var(--primary-light);
+            margin-bottom: 10px;
+        }
+
+        .drop-area p {
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(114, 9, 183, 0.2);
+        }
+
+        .btn:disabled {
+            background: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .result-container {
             margin-top: 20px;
+            display: none;
+        }
+
+        .image-result {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .image-result {
+                flex-direction: row;
+            }
+        }
+
+        .image-preview {
+            flex: 1;
+            border-radius: 15px;
+            overflow: hidden;
+            max-height: 220px;
+            position: relative;
+            box-shadow: 0 5px 15px var(--shadow);
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background-color: var(--card-bg);
+        }
+
+        .result-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .badge-ai {
+            background-color: rgba(247, 37, 133, 0.1);
+            color: var(--danger);
+        }
+
+        .badge-human {
+            background-color: rgba(6, 214, 160, 0.1);
+            color: var(--success);
+        }
+
+        .result-value {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+        }
+
+        .confidence-meter {
+            height: 10px;
+            background: var(--meter-bg);
+            border-radius: 5px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        .confidence-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success) 0%, var(--danger) 100%);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+
+        .confidence-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .spinner {
+            border: 3px solid rgba(128, 128, 128, 0.2);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-message {
+            color: var(--danger);
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 15px;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .badge {
+                font-size: 1.7rem;
+            }
+
+            .drop-area {
+                padding: 15px;
+            }
+
+            .drop-area .icon {
+                font-size: 2rem;
+                margin-bottom: 8px;
+            }
+
+            .theme-toggle {
+                top: 10px;
+                right: 10px;
+            }
         }
     </style>
 </head>
 
 <body>
-    <h1>AI Image Detector</h1>
-    <input type="file" id="imageInput" accept="image/*">
-    <button onclick="checkImage()">Check Image</button>
-    <div id="result"></div>
-    <img id="imagePreview" src="/placeholder.svg" alt="Image preview" style="display: none;">
+    <!-- Theme toggle switch -->
+    <div class="theme-toggle">
+        <span class="theme-icon" id="themeIcon">☀️</span>
+        <label class="toggle-switch">
+            <input type="checkbox" id="themeToggle">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="container">
+        <h1>AI Image Detector</h1>
+        <p class="subtitle">Upload an image to check if it was generated by AI or created by a human</p>
+
+        <div class="upload-container">
+            <div class="drop-area" id="dropArea">
+                <div class="icon">📁</div>
+                <p>Drag & drop your image here or</p>
+                <button class="btn" onclick="document.getElementById('imageInput').click()">Browse Files</button>
+                <input type="file" id="imageInput" class="file-input" accept="image/*">
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing image...</p>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="result-container" id="resultContainer">
+            <div class="image-result">
+                <div class="image-preview">
+                    <img id="imagePreview" src="/placeholder.svg" alt="Image preview">
+                </div>
+                <div class="result-details">
+                    <div id="resultBadge" class="badge"></div>
+                    <div id="resultValue" class="result-value"></div>
+                    <div class="confidence-meter">
+                        <div class="confidence-bar" id="confidenceBar"></div>
+                    </div>
+                    <div class="confidence-label">
+                        <span>Human</span>
+                        <span>AI</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        function checkImage() {
-            const input = document.getElementById('imageInput');
-            const file = input.files[0];
-            if (!file) {
-                alert('Please select an image first.');
-                return;
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const htmlElement = document.documentElement;
+
+        // Check for saved theme preference or use device preference
+        const savedTheme = localStorage.getItem('theme') ||
+            (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+        // Apply saved theme on page load
+        if (savedTheme === 'dark') {
+            htmlElement.setAttribute('data-theme', 'dark');
+            themeToggle.checked = true;
+            themeIcon.textContent = '🌙';
+        }
+
+        // Handle theme toggle
+        themeToggle.addEventListener('change', function () {
+            if (this.checked) {
+                htmlElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                themeIcon.textContent = '🌙';
+            } else {
+                htmlElement.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+                themeIcon.textContent = '☀️';
             }
+        });
+
+        // Handle drag and drop functionality
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('imageInput');
+
+        ['dragover', 'dragenter'].forEach(eventName => {
+            dropArea.addEventListener(eventName, e => {
+                e.preventDefault();
+                dropArea.style.borderColor = getComputedStyle(document.documentElement).getPropertyValue('--primary');
+                dropArea.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--drop-hover');
+            });
+        });
+
+        ['dragleave', 'dragend'].forEach(eventName => {
+            dropArea.addEventListener(eventName, e => {
+                dropArea.style.borderColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-light');
+                dropArea.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--drop-bg');
+            });
+        });
+
+        dropArea.addEventListener('drop', e => {
+            e.preventDefault();
+            dropArea.style.borderColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-light');
+            dropArea.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--drop-bg');
+
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                checkImage();
+            }
+        });
+
+        fileInput.addEventListener('change', checkImage);
+
+        function checkImage() {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            // Show loading state
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultContainer').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
 
             const formData = new FormData();
             formData.append('file', file);
@@ -63,22 +505,30 @@
                     return response.json();
                 })
                 .then(data => {
+                    document.getElementById('loading').style.display = 'none';
+
                     if (data.status === 'success') {
                         const probability = data.predictions[0][0];
                         const isAI = probability > 0.5;
-                        const result = isAI ? 'AI-generated' : 'Human-generated';
-                        const percentage = (probability * 100).toFixed(2);
-                        document.getElementById('result').textContent =
-                            `Result: ${result}`;
+                        const percentage = (probability * 100).toFixed(1);
+
+                        // Update UI with results
+                        document.getElementById('resultContainer').style.display = 'block';
+                        document.getElementById('resultBadge').className =
+                            `badge ${isAI ? 'badge-ai' : 'badge-human'}`;
+                        document.getElementById('resultBadge').textContent =
+                            isAI ? 'AI-Generated' : 'Human-Created';
+                        document.getElementById('resultValue').textContent =
+                            `${percentage}% Confidence`;
+                        document.getElementById('confidenceBar').style.width = `${percentage}%`;
                     } else {
-                        document.getElementById('result').textContent =
-                            'Error processing the image. Please try again.';
+                        showError('Error processing the image. Please try again.');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    document.getElementById('result').textContent =
-                        'An error occurred. Please try again.';
+                    document.getElementById('loading').style.display = 'none';
+                    showError('An error occurred. Please try again.');
                 });
 
             // Preview the image
@@ -86,9 +536,14 @@
             reader.onload = function (e) {
                 const img = document.getElementById('imagePreview');
                 img.src = e.target.result;
-                img.style.display = 'block';
             }
             reader.readAsDataURL(file);
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
         }
     </script>
 </body>
