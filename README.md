@@ -60,11 +60,31 @@ Saved model ✅:
 Model saved as resnet50_ai_vs_real_final.h5
 ```
 
-Example inference:
+### Test Results & Examples 📊
 
-```
-Prediction: Real, Probability: 0.1724
-```
+Below are screenshots showing the model training performance and real-world inference examples:
+
+**Model Training Metrics:**
+
+![Accuracy and Loss Graphs](docs/images/test_results/Accuracy_Loss%20graphs.PNG)
+
+_Epoch-by-epoch training and validation accuracy/loss curves demonstrating strong convergence._
+
+**Inference Examples:**
+
+![Prediction Result 1](docs/images/test_results/predict%20results.PNG)
+
+_Example prediction result showing AI-generated image detection with confidence score._
+
+![Prediction Result 2](docs/images/test_results/predict%20results_2.PNG)
+
+_Another example demonstrating real image classification._
+
+**Additional Test Results:**
+
+![Test Result 1](docs/images/test_results/results_1.PNG)
+
+![Test Result 2](docs/images/test_results/results_2.PNG)
 
 Repository layout 📁:
 
@@ -176,7 +196,7 @@ Notes 💡
 
 When Flask starts it prints a http://127.0.0.1:5000/ link—open it in a browser, upload an image, and the endpoint will respond with either "AI-generated" or "Real" plus a confidence score. 🚀
 
-Notes
+Notes 💡
 
 - Ensure a compatible model file exists in `models/`. The app scans `models/` for the first filename matching entries in MODEL_CANDIDATES.
 - Update the Google Drive placeholder link to a real download URL if you reference a prebuilt model.
