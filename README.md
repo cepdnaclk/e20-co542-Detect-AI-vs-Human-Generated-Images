@@ -1,10 +1,10 @@
-## Detect AI vs. Human-Generated Images
+## Detect AI vs. Human-Generated Images 🖼️🤖
 
 Lightweight Flask service and supporting notebooks for distinguishing AI-generated imagery from real-world photographs.
 
 A concise project for experimenting with model training and inference: includes training notebooks, exported Keras models, and a minimal web UI to upload an image and get a prediction (AI-generated vs. real). Intended for research, demos, and educational use — not a certified forensic tool.
 
-### Example run (captured outputs)
+### Example run (captured outputs) 📈
 
 Train CSV sample:
 
@@ -54,10 +54,10 @@ Epoch-by-epoch metrics (10 epochs):
 | 9 | 0.7707 | 0.4815 | 0.7978 | 0.4442 |
 | 10 | 0.7800 | 0.4738 | 0.8004 | 0.4406 |
 
-Saved model:
+Saved model ✅:
 
 ```
-✅ Model saved as resnet50_ai_vs_real_final.h5
+Model saved as resnet50_ai_vs_real_final.h5
 ```
 
 Example inference:
@@ -66,7 +66,7 @@ Example inference:
 Prediction: Real, Probability: 0.1724
 ```
 
-Repository layout:
+Repository layout 📁:
 
 ```
 ├── docs/                     # GitHub Pages documentation site
@@ -82,14 +82,14 @@ Repository layout:
 └── requirements.txt
 ```
 
-### 1. Clone the repository
+### 1. Clone the repository 📥
 
 ```powershell
 git clone https://github.com/cepdnaclk/e20-co542-Detect-AI-vs-Human-Generated-Images.git
 cd e20-co542-Detect-AI-vs-Human-Generated-Images
 ```
 
-### 2. (Optional) Create and activate a virtual environment
+### 2. (Optional) Create and activate a virtual environment 🐍
 
 PowerShell:
 
@@ -112,14 +112,14 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Install dependencies
+### 3. Install dependencies ⬇️
 
 ```powershell
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-### 4. Prepare a trained model
+### 4. Prepare a trained model 🧠
 
 - If you can train locally with a GPU:
 
@@ -136,7 +136,7 @@ Name the exported file to match a candidate expected by the app (for example `mo
 
 If you prefer a ready-made model, place the downloaded file in `models/`. (https://drive.google.com/file/d/1IlMIVhLpmD2G36HWOWy2nN510xGyRkDu/view?usp=sharing)
 
-### 5. Run the web service
+### 5. Run the web service ▶️
 
 Below are a few equivalent ways to start the Flask app on different shells. Pick the style you prefer. In all cases make sure your virtual environment is activated first (see section 2).
 
@@ -168,13 +168,13 @@ Or, POSIX-style environment variable inline (macOS / Linux):
 FLASK_APP=src.ai_vs_human_detector.app:app python -m flask run --debug
 ```
 
-Notes
+Notes 💡
 
 - Use the virtual environment activation commands from section 2 before running the above (so the `flask` command and project deps are available).
 - `--debug` enables the debug mode (reloader and debugger). If your Flask version doesn't accept `--debug`, you can instead run with `--reload` or set `FLASK_ENV=development` on older Flask versions.
 - If you see an import or runtime error after starting Flask, double-check that `models/` contains a compatible model file and that your Python environment has the packages listed in `requirements.txt` installed.
 
-When Flask starts it prints a http://127.0.0.1:5000/ link—open it in a browser, upload an image, and the endpoint will respond with either "AI-generated" or "Real" plus a confidence score.
+When Flask starts it prints a http://127.0.0.1:5000/ link—open it in a browser, upload an image, and the endpoint will respond with either "AI-generated" or "Real" plus a confidence score. 🚀
 
 Notes
 
