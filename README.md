@@ -138,19 +138,41 @@ If you prefer a ready-made model, place the downloaded file in `models/`. (https
 
 ### 5. Run the web service
 
-PowerShell:
+Below are a few equivalent ways to start the Flask app on different shells. Pick the style you prefer. In all cases make sure your virtual environment is activated first (see section 2).
+
+PowerShell (set env for current session):
 
 ```powershell
 $env:FLASK_APP = 'src.ai_vs_human_detector.app:app'
 python -m flask run --debug
 ```
 
-Command Prompt:
+Command Prompt (set env for current session):
 
 ```cmd
 set FLASK_APP=src.ai_vs_human_detector.app:app
 python -m flask run --debug
 ```
+
+Modern (recommended) Flask CLI — avoid environment variables and pass the app directly to the CLI.
+
+PowerShell / Command Prompt / POSIX (works when `flask` is on PATH or inside an activated venv):
+
+```powershell
+flask --app src.ai_vs_human_detector.app --debug run
+```
+
+Or, POSIX-style environment variable inline (macOS / Linux):
+
+```bash
+FLASK_APP=src.ai_vs_human_detector.app:app python -m flask run --debug
+```
+
+Notes
+
+- Use the virtual environment activation commands from section 2 before running the above (so the `flask` command and project deps are available).
+- `--debug` enables the debug mode (reloader and debugger). If your Flask version doesn't accept `--debug`, you can instead run with `--reload` or set `FLASK_ENV=development` on older Flask versions.
+- If you see an import or runtime error after starting Flask, double-check that `models/` contains a compatible model file and that your Python environment has the packages listed in `requirements.txt` installed.
 
 When Flask starts it prints a http://127.0.0.1:5000/ link—open it in a browser, upload an image, and the endpoint will respond with either "AI-generated" or "Real" plus a confidence score.
 
